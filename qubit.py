@@ -1,6 +1,5 @@
 import numpy as np
-import matplotlib.pyplot as plt
-from jax import jit, grad, random, numpy as jnp
+from jax import jit, numpy as jnp
 from functools import partial
 from qiskit.visualization.bloch import Bloch
 
@@ -41,9 +40,6 @@ class Qubit():
 
     def angles_to_qstate(self, theta, phi):
         # Inputs: theta, phi
-        """psi_1 = np.exp(1j * phi) * np.cos(theta / 2)
-        psi_2 = np.sin(theta / 2)"""
-
         psi_1 = jnp.cos(theta / 2)
         psi_2 = jnp.exp(1j * phi) * jnp.sin(theta / 2)
 

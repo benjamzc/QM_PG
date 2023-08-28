@@ -1,6 +1,5 @@
 from flax import linen as nn
 import optax
-import numpy as np
 from jax import jit, grad, random, numpy as jnp
 from functools import partial
 import optax
@@ -11,7 +10,7 @@ class Policy():
 		self.model = self._architecture()
 		self.params = self.model.init(random.PRNGKey(0), jnp.ones((1, 2)))  # Sets up and returns the initial weights and biases
 
-		# Initialize optimizer and state here directly without jit
+		# Initialize optimizer
 		gradient_transform = optax.chain(
 				optax.clip_by_global_norm(1.0),  # 1.0 is the clipping threshold
 				optax.adam(1e-4)  # Learning rate

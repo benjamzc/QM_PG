@@ -48,8 +48,6 @@ class Policy_Gradient():
 			# Collect trajectory for one episode
 			while True:
 				action_probs = self.policy.predict(state) # Probability distribution for 7 gates
-
-				#action_probs_normalized = self.normalize_probs(action_probs) # Check probability distribution is exactly normalized
 				action_probs = np.asarray(action_probs).astype('float64')
 				action_probs /= np.sum(action_probs)
 				action = self.sample_action(action_probs) # Choose gate with highest probability
