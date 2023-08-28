@@ -38,7 +38,7 @@ class Policy():
 	def compute_gradients(self, action, input):
 		def loss(params):
 			prob_vector = self.model.apply(params, input)
-			log_prob_action = jnp.log(prob_vector[action] + 1e-8) # select the log probability of the taken action
+			log_prob_action = jnp.log(prob_vector[action] + 1e-8)
 			return -log_prob_action
 
 		return grad(loss)(self.params) # Return the gradient of the loss w.r.t. the NN parameters.

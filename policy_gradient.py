@@ -38,7 +38,7 @@ class Policy_Gradient():
 
 			# Add weight from rewards to gradients
 			scaled_gradients = tree_map(lambda x: x * cum_reward, grads)
-			self.policy.apply_gradients(scaled_gradients) # Updates the NN parameters in the direction of the gradient
+			self.policy.apply_gradients(scaled_gradients) # Updates the NN parameters
 	
 	def train_policy(self):
 		for epoch in range(self.epochs):

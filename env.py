@@ -10,7 +10,7 @@ class QubitEnv():
                                       dtype=jnp.float32)
 
         self.action_space = spaces.Discrete(7) # Action space: 7 possible gates as operators
-        self.q = Qubit() # Create instance of Qubit() class
+        self.q = Qubit()
         self.n_time_steps = n_time_steps
         self.current_step = 0
 

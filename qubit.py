@@ -26,7 +26,6 @@ class Qubit():
         return jnp.array([self.r_x, np.negative(self.r_x), self.r_y, np.negative(self.r_y), self.r_z, np.negative(self.r_z), np.identity(2)])
 
     def qstate_to_angles(self, qstate):
-        # Input qstate : [psi_1, psi_2]
         psi_1 = qstate[0]
         psi_2 = qstate[1]
 
@@ -39,7 +38,6 @@ class Qubit():
         return jnp.array([theta, phi])
 
     def angles_to_qstate(self, theta, phi):
-        # Inputs: theta, phi
         psi_1 = jnp.cos(theta / 2)
         psi_2 = jnp.exp(1j * phi) * jnp.sin(theta / 2)
 
