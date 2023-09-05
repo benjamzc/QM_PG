@@ -7,39 +7,46 @@ class Qubit():
     """
     Custom class which contains the physics
     """
-    def __init__(self):
+    def __init__(self, T):
         # Initialize the qubit in a random state
         self.init_random_state()
 
-    def init_gates(self, T):
         # Define the different gates
-        self.T = T
-        self.r_x = [[np.cos(2 * np.pi/self.T), -1j * np.sin(2 * np.pi/self.T)],
-                  [-1j * np.sin(2 * np.pi/self.T), np.cos(2 * np.pi/self.T)]]
+        r_x = jnp.array([[jnp.cos(2 * jnp.pi/T), -1j * jnp.sin(2 * jnp.pi/T)],
+                  [-1j * jnp.sin(2 * jnp.pi/T), jnp.cos(2 * jnp.pi/T)]])
 
-        self.r_y = [[np.cos(2 * np.pi/self.T), -np.sin(2 * np.pi/self.T)],
-                  [np.sin(2 * np.pi/self.T), np.cos(2 * np.pi/self.T)]]
+        r_y = jnp.array([[jnp.cos(2 * jnp.pi/T), -jnp.sin(2 * jnp.pi/T)],
+                  [jnp.sin(2 * jnp.pi/T), jnp.cos(2 * jnp.pi/T)]])
 
-        self.r_z = [[np.exp(-1j * 2 * np.pi/self.T), 0],
-                   [0, np.exp(1j * 2 * np.pi/self.T)]]
+        r_z = jnp.array([[jnp.cos(2 * jnp.pi/T) - (1j * jnp.sin(2 * jnp.pi/T)), 0],
+                   [0, jnp.cos(2 * jnp.pi/T) + (1j * jnp.sin(2 * jnp.pi/T))]])
 
-        return jnp.array([self.r_x, np.negative(self.r_x), self.r_y, np.negative(self.r_y), self.r_z, np.negative(self.r_z), np.identity(2)])
+        r_negx = jnp.array([[jnp.cos(2 * jnp.pi/T), 1j * jnp.sin(2 * jnp.pi/T)],
+                  [1j * jnp.sin(2 * jnp.pi/T), jnp.cos(2 * jnp.pi/T)]])
+
+        r_negy = jnp.array([[jnp.cos(2 * jnp.pi/T), jnp.sin(2 * jnp.pi/T)],
+                  [-jnp.sin(2 * jnp.pi/T), jnp.cos(2 * jnp.pi/T)]])
+
+        r_negz = jnp.array([[jnp.cos(2 * jnp.pi/T) + (1j * jnp.sin(2 * jnp.pi/T)), 0],
+                   [0, jnp.cos(2 * jnp.pi/T) - (1j * jnp.sin(2 * jnp.pi/T))]])
+
+        self.gates = jnp.array([r_x, r_negx, r_y, r_negy, r_z, r_negz, jnp.identity(2)])
 
     def qstate_to_angles(self, qstate):
+        # Input qstate : [psi_1, psi_2]
         psi_1 = qstate[0]
         psi_2 = qstate[1]
 
-        theta = 2 * jnp.arccos(np.abs(psi_1))
-        phi = jnp.angle(psi_2)
-
-        if phi < 0:
-          phi += 2 * jnp.pi
+        theta = 2 * jnp.arccos(jnp.abs(psi_1))
+        phi = jnp.angle(psi_2 / jnp.sin(theta / 2))
 
         return jnp.array([theta, phi])
 
+    @partial(jit, static_argnums=(0,))
     def angles_to_qstate(self, theta, phi):
+        # Inputs: theta, phi
         psi_1 = jnp.cos(theta / 2)
-        psi_2 = jnp.exp(1j * phi) * jnp.sin(theta / 2)
+        psi_2 = (jnp.cos(phi) + 1j * jnp.sin(phi)) * jnp.sin(theta / 2)
 
         return jnp.array([psi_1, psi_2])
 
@@ -47,48 +54,45 @@ class Qubit():
         """
         Initialize the qubit state randomly
         """
-        self.theta = np.random.uniform(0, np.pi)
-        self.phi = np.random.uniform(0, 2 * np.pi)
+        self.phi = 2 * jnp.pi * np.random.uniform(0, 1) # Random phi
+        self.theta = jnp.arccos(1 - 2 * np.random.uniform(0, 1)) # Random theta
+
         self.state = jnp.array([self.theta, self.phi])
 
-    @partial(jit, static_argnums=(0,))
     def compute_fidelity(self):
         """
         Fidelity calculated as square inner product of current state and target state
         Range: [0, 1]
         """
-        fidelity = 1
-        target_state = jnp.array([1, 0])
-        if self.state != None:
-          qstate = self.angles_to_qstate(self.state[0], self.state[1])
-          inner_prod = jnp.abs(jnp.dot(jnp.conj(target_state), qstate))
-          fidelity = inner_prod**2
+        theta = self.state[0]
+        inner_prod = jnp.cos(theta/2)
+        fidelity = inner_prod ** 2
 
         return fidelity
 
-    def apply_gate(self, action, T):
+    def apply_gate(self, action):
         """
         Gates act on qubits via matrix multiplication
         """
-        gates = self.init_gates(T)
-        chosen_gate = gates[action]
-        qstate = self.angles_to_qstate(self.theta, self.phi) # Convert to qstate
-        new_qstate = jnp.dot(chosen_gate, qstate) # Matrix multiplication: gate, vector
+        chosen_gate = self.gates[action]
+        qstate = self.angles_to_qstate(self.theta, self.phi)
+        new_qstate = jnp.dot(chosen_gate, qstate)
+
         self.state = self.qstate_to_angles(new_qstate)
 
     def render_Bloch_repr(self):
         theta = self.state[0]
         phi = self.state[1]
-        
-        # Convert theta, phi to Bloch sphere coords.
+
+        # Convert theta, phi to Bloch vector
         x = jnp.sin(theta) * jnp.cos(phi)
         y = jnp.sin(theta) * jnp.sin(phi)
         z = jnp.cos(theta)
-        
-        # Plot vectors
+
+        # Plot the Bloch vector
         bloch = Bloch()
-        bloch.add_vectors([x, y, z]) # Resulting vector
-        bloch.add_vectors([0, 0, 1]) # Target vector
+        bloch.add_vectors([x, y, z])
+        bloch.add_vectors([0, 0, 1])
         bloch.show()
 
 
